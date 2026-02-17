@@ -1,0 +1,18 @@
+# Emacs package cache
+elpa/
+
+# Autosave/session data
+auto-save-list/
+history
+
+# Generated parser binaries
+tree-sitter/
+
+# URL cache
+url/
+
+# Backup/lock files
+*~
+\#*\#
+.\#*
+.DS_Store
