@@ -73,10 +73,29 @@
 ;; ミニバッファ履歴を保存
 (savehist-mode 1)
 
+;; ミニバッファ領域を単純に大きく使う
+(setq resize-mini-windows t
+      max-mini-window-height 0.5)
+
 ;; Vertico を有効化
 (when (require 'vertico nil t)
-  (setq vertico-count 20)
+  (setq vertico-count 30
+        vertico-resize nil)
   (vertico-mode 1))
+
+;; Vertico のファイル入力で Ido 風のディレクトリ削除を有効化
+(when (require 'vertico-directory nil t)
+  (define-key vertico-map (kbd "RET") #'vertico-directory-enter)
+  ;; C-x C-f では C-h/DEL で常に1階層ずつ消す
+  (define-key vertico-map (kbd "DEL") #'vertico-directory-up)
+  (define-key vertico-map (kbd "<backspace>") #'vertico-directory-up)
+  (define-key vertico-map (kbd "C-h") #'vertico-directory-up)
+  (define-key vertico-map (kbd "M-DEL") #'vertico-directory-delete-word)
+  (define-key vertico-map (kbd "C-w") #'vertico-directory-delete-word)
+  (define-key minibuffer-local-filename-completion-map (kbd "DEL") #'vertico-directory-up)
+  (define-key minibuffer-local-filename-completion-map (kbd "<backspace>") #'vertico-directory-up)
+  (define-key minibuffer-local-filename-completion-map (kbd "C-h") #'vertico-directory-up)
+  (add-hook 'rfn-eshadow-update-overlay-hook #'vertico-directory-tidy))
 
 ;; 注釈表示を有効化
 (when (require 'marginalia nil t)
@@ -94,6 +113,24 @@
       (autoload 'consult-git-grep "consult" nil t)
       (global-set-key (kbd "C-x f") #'consult-git-grep))
   (global-set-key (kbd "C-x f") #'vc-git-grep))
+
+;; Go: gopls(eglot) と consult-xref で定義ジャンプ/候補表示を使う
+(with-eval-after-load 'eglot
+  (setf (alist-get '(go-mode go-ts-mode) eglot-server-programs nil nil #'equal)
+        '("gopls")))
+(add-hook 'go-mode-hook #'eglot-ensure)
+(when (fboundp 'go-ts-mode)
+  (add-hook 'go-ts-mode-hook #'eglot-ensure))
+
+;; xref の候補表示を minibuffer (consult) に統一
+(when (locate-library "consult")
+  (autoload 'consult-xref "consult-xref" nil t)
+  (with-eval-after-load 'xref
+    (setq xref-show-xrefs-function #'consult-xref
+          xref-show-definitions-function #'consult-xref)))
+
+;; eldoc はミニバッファに1行で表示
+(setq eldoc-echo-area-use-multiline-p nil)
 
 ;; ghq 管理リポジトリを素早く選択する
 (defun my/ghq-select-repo ()
@@ -124,7 +161,7 @@
    '("6bdc4e5f585bb4a500ea38f563ecf126570b9ab3be0598bdf607034bb07a8875"
      default))
  '(package-selected-packages
-   '(color-theme-sanityinc-tomorrow consult marginalia orderless
+   '(color-theme-sanityinc-tomorrow consult go-mode marginalia orderless
 				    terraform-mode vertico)))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
