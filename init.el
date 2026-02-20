@@ -47,6 +47,14 @@
 (global-whitespace-mode -1)
 (setq whitespace-line-column 200)
 
+;; 実ファイルへ自動保存し、中間ファイル(~ / .#)は作らない
+(setq auto-save-default t
+      auto-save-no-message t
+      make-backup-files nil
+      create-lockfiles nil)
+(auto-save-visited-mode 1)
+(setq auto-save-visited-interval 2)
+
 (setq whitespace-style '(face              ; faceを使って視覚化する。
                          trailing          ; 行末の空白を対象とする。
                          ;lines-tail        ; 長すぎる行のうち
@@ -85,16 +93,19 @@
 
 ;; Vertico のファイル入力で Ido 風のディレクトリ削除を有効化
 (when (require 'vertico-directory nil t)
+  (defun my/vertico-backward-delete-char (n)
+    "Delete char normally, but delete one path segment for file completion."
+    (interactive "p")
+    (if (eq 'file (vertico--metadata-get 'category))
+        (vertico-directory-up n)
+      (delete-backward-char n)))
   (define-key vertico-map (kbd "RET") #'vertico-directory-enter)
-  ;; C-x C-f では C-h/DEL で常に1階層ずつ消す
-  (define-key vertico-map (kbd "DEL") #'vertico-directory-up)
-  (define-key vertico-map (kbd "<backspace>") #'vertico-directory-up)
-  (define-key vertico-map (kbd "C-h") #'vertico-directory-up)
+  ;; C-x C-f では C-h/DEL で1階層削除、それ以外は通常削除
+  (define-key vertico-map (kbd "DEL") #'my/vertico-backward-delete-char)
+  (define-key vertico-map (kbd "<backspace>") #'my/vertico-backward-delete-char)
+  (define-key vertico-map (kbd "C-h") #'my/vertico-backward-delete-char)
   (define-key vertico-map (kbd "M-DEL") #'vertico-directory-delete-word)
   (define-key vertico-map (kbd "C-w") #'vertico-directory-delete-word)
-  (define-key minibuffer-local-filename-completion-map (kbd "DEL") #'vertico-directory-up)
-  (define-key minibuffer-local-filename-completion-map (kbd "<backspace>") #'vertico-directory-up)
-  (define-key minibuffer-local-filename-completion-map (kbd "C-h") #'vertico-directory-up)
   (add-hook 'rfn-eshadow-update-overlay-hook #'vertico-directory-tidy))
 
 ;; 注釈表示を有効化
