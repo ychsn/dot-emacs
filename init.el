@@ -5,7 +5,7 @@
 
 ;; 必要パッケージ一覧
 (setq package-selected-packages
-      '(use-package vertico orderless consult marginalia magit))
+      '(use-package vertico orderless consult marginalia magit markdown-mode))
 
 ;; 必要パッケージをインストール
 (defun my/install-selected-packages ()
@@ -172,7 +172,7 @@
    '("6bdc4e5f585bb4a500ea38f563ecf126570b9ab3be0598bdf607034bb07a8875"
      default))
  '(package-selected-packages
-   '(color-theme-sanityinc-tomorrow consult go-mode marginalia orderless
+   '(color-theme-sanityinc-tomorrow consult go-mode marginalia markdown-mode orderless
 				    terraform-mode vertico)))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
