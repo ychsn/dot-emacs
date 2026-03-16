@@ -122,8 +122,19 @@
 (if (locate-library "consult")
     (progn
       (autoload 'consult-git-grep "consult" nil t)
+      (autoload 'consult-line "consult" nil t)
       (global-set-key (kbd "C-x f") #'consult-git-grep))
   (global-set-key (kbd "C-x f") #'vc-git-grep))
+
+;; C-c s でバッファ内を consult-line で検索
+(when (locate-library "consult")
+  (global-set-key (kbd "C-c s") #'consult-line))
+
+;; C-x C-f は常に find-file にする
+(global-set-key (kbd "C-x C-f") #'find-file)
+
+;; C-x C-o で project-find-file
+(global-set-key (kbd "C-x C-o") #'project-find-file)
 
 ;; Go: gopls(eglot) と consult-xref で定義ジャンプ/候補表示を使う
 (with-eval-after-load 'eglot
@@ -132,6 +143,101 @@
 (add-hook 'go-mode-hook #'eglot-ensure)
 (when (fboundp 'go-ts-mode)
   (add-hook 'go-ts-mode-hook #'eglot-ensure))
+
+;; TypeScript/TSX: typescript-language-server(eglot) で定義ジャンプを使う
+(with-eval-after-load 'eglot
+  (setf (alist-get '(typescript-ts-mode tsx-ts-mode) eglot-server-programs nil nil #'equal)
+        '("typescript-language-server" "--stdio")))
+(add-hook 'typescript-ts-mode-hook #'eglot-ensure)
+(add-hook 'tsx-ts-mode-hook #'eglot-ensure)
+
+;; TypeScript/TSX: 外部パッケージなしで ElDoc を point 近くに出す
+(defun my/eldoc-hide-child-frame ()
+  "Hide the child frame used for ElDoc, if any."
+  (when-let* ((buffer (and (boundp 'eldoc--doc-buffer)
+                           (buffer-live-p eldoc--doc-buffer)
+                           eldoc--doc-buffer))
+              (window (get-buffer-window buffer t))
+              (frame (window-frame window)))
+    (when (frame-parameter frame 'parent-frame)
+      (delete-frame frame))))
+
+(defun my/eldoc-child-frame-position ()
+  "Return the pixel position where the ElDoc child frame should appear."
+  (let* ((pos (or (posn-at-point) (posn-at-point (point-max))))
+         (xy (if pos (posn-x-y pos) '(0 . 0)))
+         (edges (window-inside-pixel-edges))
+         (line-height (frame-char-height)))
+    (cons (+ (nth 0 edges) (car xy))
+          (+ (nth 1 edges) (cdr xy) line-height 8))))
+
+(defun my/eldoc-display-in-child-frame (docs interactive)
+  "Display DOCS in a child frame near point for TypeScript buffers.
+Fall back to the echo area when child frames are unavailable."
+  (if (not (and docs
+                (display-graphic-p)
+                (bound-and-true-p eglot-managed-mode)
+                (derived-mode-p 'typescript-ts-mode 'tsx-ts-mode)))
+      (progn
+        (my/eldoc-hide-child-frame)
+        (eldoc-display-in-echo-area docs interactive))
+    (eldoc-display-in-buffer docs nil)
+    (let* ((buffer (eldoc-doc-buffer))
+           (position (my/eldoc-child-frame-position))
+           (window
+            (display-buffer
+             buffer
+             `((display-buffer-in-child-frame)
+               (inhibit-same-window . t)
+               (window-parameters . ((mode-line-format . none)
+                                     (no-other-window . t)
+                                     (no-delete-other-windows . t)))
+               (child-frame-parameters
+                . ((undecorated . t)
+                   (minibuffer . nil)
+                   (no-accept-focus . t)
+                   (no-focus-on-map . t)
+                   (skip-taskbar . t)
+                   (border-width . 0)
+                   (child-frame-border-width . 1)
+                   (internal-border-width . 8)
+                   (left . ,(car position))
+                   (top . ,(cdr position))
+                   (vertical-scroll-bars . nil)
+                   (horizontal-scroll-bars . nil)
+                   (menu-bar-lines . 0)
+                   (tool-bar-lines . 0)))))))
+      (when window
+        (set-window-dedicated-p window t)
+        (set-window-fringes window 8 8)
+        (with-current-buffer buffer
+          (setq-local mode-line-format nil)
+          (setq-local cursor-type nil)
+          (setq-local truncate-lines nil))
+        (fit-window-to-buffer window 12 3 100 24)
+        (let ((frame (window-frame window)))
+          (set-frame-position frame (car position) (cdr position))
+          (make-frame-visible frame))))))
+
+(defun my/eldoc-doc-buffer ()
+  "Display the ElDoc buffer, producing it first when needed."
+  (interactive)
+  (if (and (boundp 'eldoc--doc-buffer)
+           (buffer-live-p eldoc--doc-buffer))
+      (eldoc-doc-buffer t)
+    (eldoc)
+    (when (and (boundp 'eldoc--doc-buffer)
+               (buffer-live-p eldoc--doc-buffer))
+      (eldoc-doc-buffer t))))
+
+(defun my/typescript-eldoc-setup ()
+  "Use a child frame for ElDoc in TypeScript buffers."
+  (setq-local eldoc-display-functions '(my/eldoc-display-in-child-frame))
+  (add-hook 'pre-command-hook #'my/eldoc-hide-child-frame nil t)
+  (local-set-key (kbd "C-c e") #'my/eldoc-doc-buffer))
+
+(add-hook 'typescript-ts-mode-hook #'my/typescript-eldoc-setup)
+(add-hook 'tsx-ts-mode-hook #'my/typescript-eldoc-setup)
 
 ;; xref の候補表示を minibuffer (consult) に統一
 (when (locate-library "consult")
