@@ -5,7 +5,8 @@
 
 ;; 必要パッケージ一覧
 (setq package-selected-packages
-      '(use-package vertico orderless consult marginalia magit markdown-mode))
+      '(use-package vertico orderless consult marginalia magit markdown-mode
+                    undo-tree))
 
 ;; 必要パッケージをインストール
 (defun my/install-selected-packages ()
@@ -36,6 +37,17 @@
 ;; フォント
 (set-frame-font "DejaVu Sans Mono-14")
 
+;; macOS (Mac Port) 固有設定
+(when (eq system-type 'darwin)
+  ;; 左Optionをmetaに。これでM-xが効く
+  (setq mac-option-modifier 'meta)
+  ;; 右Optionは素の挙動を残し、特殊文字入力に使えるようにする
+  (setq mac-right-option-modifier 'none)
+  ;; CommandはsuperにしてmacOS標準のキーバインドと衝突させない
+  (setq mac-command-modifier 'super)
+  ;; リガチャ表示 (Mac Port限定)
+  (when (fboundp 'mac-auto-operator-composition-mode)
+    (mac-auto-operator-composition-mode 1)))
 
 (menu-bar-mode -1)
 (tool-bar-mode -1)
@@ -117,6 +129,14 @@
   (setq completion-styles '(orderless basic)
         completion-category-defaults nil
         completion-category-overrides '((file (styles partial-completion)))))
+
+;; undo-tree で undo 履歴をツリー表示できるようにする
+(when (require 'undo-tree nil t)
+  (setq undo-tree-auto-save-history nil
+        undo-tree-visualizer-timestamps t
+        undo-tree-visualizer-diff t)
+  (global-undo-tree-mode 1)
+  (global-set-key (kbd "C-x u") #'undo-tree-visualize))
 
 ;; C-x f で git grep (consult がなければ vc-git-grep)
 (if (locate-library "consult")
@@ -279,7 +299,7 @@ Fall back to the echo area when child frames are unavailable."
      default))
  '(package-selected-packages
    '(color-theme-sanityinc-tomorrow consult go-mode marginalia markdown-mode orderless
-				    terraform-mode vertico)))
+				    terraform-mode undo-tree vertico)))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.

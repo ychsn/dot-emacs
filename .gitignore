@@ -1,9 +1,11 @@
 # Emacs package cache
 elpa/
+elpa.*.bak/
 
 # Autosave/session data
 auto-save-list/
 history
+projects
 
 # Generated parser binaries
 tree-sitter/
