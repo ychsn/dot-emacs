@@ -26,6 +26,16 @@
       '((typescript "https://github.com/tree-sitter/tree-sitter-typescript" "master" "typescript/src")
         (tsx "https://github.com/tree-sitter/tree-sitter-typescript" "master" "tsx/src")))
 
+;; typescript-ts-mode は自身を auto-mode-alist に登録するが、それはライブラリが
+;; 読み込まれた後の話で、読み込む契機が無いので .ts が fundamental-mode になる。
+;; grammar が使える場合だけ明示的に対応付ける。
+(with-eval-after-load 'treesit
+  (when (treesit-ready-p 'typescript t)
+    (add-to-list 'auto-mode-alist '("\\.ts\\'" . typescript-ts-mode)))
+  (when (treesit-ready-p 'tsx t)
+    (add-to-list 'auto-mode-alist '("\\.tsx\\'" . tsx-ts-mode))))
+(require 'treesit nil t)
+
 ; Ctrl-hはBackspace扱い
 (keyboard-translate ?\C-h ?\C-?)
 (global-set-key (kbd "<f1>") #'help-command)
