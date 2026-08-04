@@ -422,6 +422,13 @@ Fall back to the echo area when child frames are unavailable."
                (buffer-live-p eldoc--doc-buffer))
       (eldoc-doc-buffer t))))
 
+;; Command 単独押しでのポップアップは Emacs では作れない (修飾キーだけでは
+;; キーイベントが発生しない)。代わりに point 上の表示を速く・厚くして近づける。
+(setq eldoc-idle-delay 0.2
+      ;; default は最初の情報源だけを出すので、シグネチャだけで定義元の
+      ;; ドキュメントコメントが出ない。compose にして両方並べる。
+      eldoc-documentation-strategy #'eldoc-documentation-compose)
+
 (defun my/typescript-eldoc-setup ()
   "Use a child frame for ElDoc in TypeScript buffers."
   (setq-local eldoc-display-functions '(my/eldoc-display-in-child-frame))
