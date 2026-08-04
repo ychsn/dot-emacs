@@ -39,7 +39,7 @@
 
 ;; 使用テーマ。load-theme の第2引数 t で安全性の確認を省く。
 (when (require 'doom-themes nil t)
-  (load-theme 'doom-tokyo-night t))
+  (load-theme 'doom-nord-light t))
 
 ;; Tree-sitter の文法定義リスト
 (setq treesit-language-source-alist
@@ -71,7 +71,7 @@
                         "JetBrains Mono"
                         "DejaVu Sans Mono"))))
   (when font
-    (set-frame-font (format "%s-12" font) nil t)))
+    (set-frame-font (format "%s-13" font) nil t)))
 
 ;; macOS (Mac Port) 固有設定
 (when (eq system-type 'darwin)
