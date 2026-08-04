@@ -56,6 +56,10 @@
     (add-to-list 'auto-mode-alist '("\\.tsx\\'" . tsx-ts-mode))))
 (require 'treesit nil t)
 
+;; .jsonc はどのモードにも紐づいておらず fundamental-mode になる。js-json-mode は
+;; js-mode 派生なので、JSON にとっては構文外の // と /* */ もコメントとして扱える。
+(add-to-list 'auto-mode-alist '("\\.jsonc\\'" . js-json-mode))
+
 ; Ctrl-hはBackspace扱い
 (keyboard-translate ?\C-h ?\C-?)
 (global-set-key (kbd "<f1>") #'help-command)
