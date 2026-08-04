@@ -6,7 +6,14 @@
 ;; 必要パッケージ一覧
 (setq package-selected-packages
       '(use-package vertico orderless consult marginalia magit markdown-mode
-                    undo-tree))
+                    undo-tree exec-path-from-shell))
+
+;; GUI の Emacs.app は launchd から起動するのでログインシェルの PATH を継承せず、
+;; asdf の node や pnpm 配下の typescript-language-server が見つからない。
+;; window-system で絞ると --daemon 起動時 (nil) に取りこぼすので darwin 全体で行う。
+(when (and (eq system-type 'darwin)
+           (require 'exec-path-from-shell nil t))
+  (exec-path-from-shell-initialize))
 
 ;; 必要パッケージをインストール
 (defun my/install-selected-packages ()
