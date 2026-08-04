@@ -231,10 +231,36 @@
 (when (fboundp 'go-ts-mode)
   (add-hook 'go-ts-mode-hook #'eglot-ensure))
 
-;; TypeScript/TSX: typescript-language-server(eglot) で定義ジャンプを使う
+;; TypeScript/TSX: eglot で定義ジャンプを使う。
+;; TypeScript 7 は Go 実装のネイティブ移植で lib/tsserver.js を同梱しない。
+;; typescript-language-server はその tsserver.js を起動する実装なので、TS7 の
+;; プロジェクトでは "Could not find a valid typescript installation" になる。
+;; TS7 が同梱するネイティブバイナリ自体が LSP を話すため、そちらへ繋ぐ。
+(defun my/typescript--native-lsp-exe ()
+  "Return TypeScript 7's native LSP executable for this buffer, or nil.
+The binary sits in a platform- and version-specific directory, so ask the
+getExePath helper that ships with the package instead of guessing."
+  (when-let* ((from (or buffer-file-name default-directory))
+              (dir (locate-dominating-file
+                    from "node_modules/typescript/lib/getExePath.js")))
+    (let ((default-directory dir))
+      (with-temp-buffer
+        (when (eq 0 (call-process
+                     "node" nil (list t nil) nil "-e"
+                     "import('./node_modules/typescript/lib/getExePath.js').then(m=>console.log(m.default()))"))
+          (let ((exe (string-trim (buffer-string))))
+            (and (file-executable-p exe) exe)))))))
+
+(defun my/typescript-lsp-contact (&optional _interactive)
+  "Return the language server command for TypeScript buffers."
+  (if-let* ((exe (my/typescript--native-lsp-exe)))
+      (list exe "--lsp" "-stdio")
+    ;; TypeScript 5.x 以前のプロジェクト向け
+    '("typescript-language-server" "--stdio")))
+
 (with-eval-after-load 'eglot
   (setf (alist-get '(typescript-ts-mode tsx-ts-mode) eglot-server-programs nil nil #'equal)
-        '("typescript-language-server" "--stdio")))
+        #'my/typescript-lsp-contact))
 (add-hook 'typescript-ts-mode-hook #'eglot-ensure)
 (add-hook 'tsx-ts-mode-hook #'eglot-ensure)
 
