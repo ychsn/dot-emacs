@@ -11,7 +11,8 @@
 (setq package-selected-packages
       '(use-package vertico orderless consult marginalia magit markdown-mode
                     undo-tree exec-path-from-shell
-                    treemacs treemacs-nerd-icons nerd-icons))
+                    treemacs treemacs-nerd-icons nerd-icons doom-themes
+                    go-mode terraform-mode))
 
 ;; GUI の Emacs.app は launchd から起動するのでログインシェルの PATH を継承せず、
 ;; asdf の node や pnpm 配下の typescript-language-server が見つからない。
@@ -29,9 +30,9 @@
     (unless (package-installed-p pkg)
       (package-install pkg))))
 
-;; 使用テーマ
-(require 'color-theme-sanityinc-tomorrow)
-(color-theme-sanityinc-tomorrow--define-theme day)
+;; 使用テーマ。load-theme の第2引数 t で安全性の確認を省く。
+(when (require 'doom-themes nil t)
+  (load-theme 'doom-tokyo-night t))
 
 ;; Tree-sitter の文法定義リスト
 (setq treesit-language-source-alist
@@ -454,13 +455,12 @@ Fall back to the echo area when child frames are unavailable."
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(custom-enabled-themes '(sanityinc-tomorrow-day))
+ ;; custom-enabled-themes と package-selected-packages はここに書かない。
+ ;; このブロックはファイル末尾にあり、上の設定より後に実行されて勝ってしまう。
+ ;; テーマの読み込みとパッケージ一覧はファイル冒頭側を唯一の情報源にする。
  '(custom-safe-themes
    '("6bdc4e5f585bb4a500ea38f563ecf126570b9ab3be0598bdf607034bb07a8875"
-     default))
- '(package-selected-packages
-   '(color-theme-sanityinc-tomorrow consult go-mode marginalia markdown-mode orderless
-				    terraform-mode undo-tree vertico)))
+     default)))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
