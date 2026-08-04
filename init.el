@@ -1,3 +1,10 @@
+;; Custom の書き込み先を分離する。init.el 末尾に custom-set-variables があると、
+;; そこがファイルの最後に評価されるせいで上の設定を後から上書きしてしまう
+;; (テーマとパッケージ一覧で実際に起きた)。ここで先に読むことで、以降の
+;; init.el の記述が常に勝つ。
+(setq custom-file (expand-file-name "custom.el" user-emacs-directory))
+(load custom-file t)
+
 (require 'package)
 (add-to-list 'package-archives
              '("melpa-stable" . "https://stable.melpa.org/packages/") t)
@@ -58,7 +65,7 @@
 (global-display-line-numbers-mode 1)
 
 ;; フォント
-(set-frame-font "DejaVu Sans Mono-14")
+(set-frame-font "DejaVu Sans Mono-12")
 
 ;; macOS (Mac Port) 固有設定
 (when (eq system-type 'darwin)
@@ -450,20 +457,3 @@ Fall back to the echo area when child frames are unavailable."
 ;; 変更行の中で実際に変わった箇所だけを全ハンクで強調 (delta の emph 相当)
 (setq magit-diff-refine-hunk 'all)
 
-(custom-set-variables
- ;; custom-set-variables was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- ;; custom-enabled-themes と package-selected-packages はここに書かない。
- ;; このブロックはファイル末尾にあり、上の設定より後に実行されて勝ってしまう。
- ;; テーマの読み込みとパッケージ一覧はファイル冒頭側を唯一の情報源にする。
- '(custom-safe-themes
-   '("6bdc4e5f585bb4a500ea38f563ecf126570b9ab3be0598bdf607034bb07a8875"
-     default)))
-(custom-set-faces
- ;; custom-set-faces was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- )

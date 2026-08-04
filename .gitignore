@@ -10,6 +10,9 @@ projects
 # treemacs のワークスペース状態
 .cache/
 
+# Custom が自動生成する設定。init.el を唯一の情報源にするため追跡しない
+custom.el
+
 # Generated parser binaries
 tree-sitter/
 
