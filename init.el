@@ -288,6 +288,11 @@ Fall back to the echo area when child frames are unavailable."
 (global-set-key (kbd "C-c g d") #'my/ghq-dired)
 (global-set-key (kbd "C-c g s") #'my/ghq-magit-status)
 
+;; C-x g で今いるリポジトリの magit-status
+(global-set-key (kbd "C-x g") #'magit-status)
+;; 変更行の中で実際に変わった箇所だけを全ハンクで強調 (delta の emph 相当)
+(setq magit-diff-refine-hunk 'all)
+
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
