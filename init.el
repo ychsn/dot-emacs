@@ -155,12 +155,16 @@
   (global-undo-tree-mode 1)
   (global-set-key (kbd "C-x u") #'undo-tree-visualize))
 
-;; C-x f で git grep (consult がなければ vc-git-grep)
+;; C-x f でプロジェクト全体を検索。git grep は追跡済みファイルしか見ないので
+;; 書きかけの untracked なファイルを取りこぼす。rg があれば consult-ripgrep を使う
+;; (.gitignore は尊重しつつ untracked も拾う)。
 (if (locate-library "consult")
     (progn
+      (autoload 'consult-ripgrep "consult" nil t)
       (autoload 'consult-git-grep "consult" nil t)
       (autoload 'consult-line "consult" nil t)
-      (global-set-key (kbd "C-x f") #'consult-git-grep))
+      (global-set-key (kbd "C-x f")
+                      (if (executable-find "rg") #'consult-ripgrep #'consult-git-grep)))
   (global-set-key (kbd "C-x f") #'vc-git-grep))
 
 ;; C-c s でバッファ内を consult-line で検索
