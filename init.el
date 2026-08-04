@@ -85,6 +85,12 @@
   (when (fboundp 'mac-auto-operator-composition-mode)
     (mac-auto-operator-composition-mode 1)))
 
+;; マウス起点のコマンドが入力を求めるとき、macOS のネイティブダイアログではなく
+;; ミニバッファを使う。eglot が繋がっていないバッファで Cmd+クリックすると xref が
+;; etags にフォールバックし、TAGS ファイルを尋ねる Finder のパネルが開いてしまう。
+(setq use-file-dialog nil
+      use-dialog-box nil)
+
 (menu-bar-mode -1)
 (tool-bar-mode -1)
 (setq eval-expression-print-length nil)
