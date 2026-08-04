@@ -251,12 +251,29 @@ getExePath helper that ships with the package instead of guessing."
           (let ((exe (string-trim (buffer-string))))
             (and (file-executable-p exe) exe)))))))
 
+(defun my/typescript--package-dir ()
+  "Return the nearest node_modules/typescript for this buffer, or nil."
+  (when-let* ((from (or buffer-file-name default-directory))
+              (dir (locate-dominating-file from "node_modules/typescript")))
+    (expand-file-name "node_modules/typescript" dir)))
+
 (defun my/typescript-lsp-contact (&optional _interactive)
-  "Return the language server command for TypeScript buffers."
-  (if-let* ((exe (my/typescript--native-lsp-exe)))
-      (list exe "--lsp" "-stdio")
-    ;; TypeScript 5.x 以前のプロジェクト向け
-    '("typescript-language-server" "--stdio")))
+  "Return the language server command for TypeScript buffers.
+Prefer tsserver.js when the project has one: that covers TypeScript 6 and
+earlier.  pnpm links typescript into each workspace package rather than
+the repository root, and the server only searches upward from the root it
+was given, so hand it the path through initializationOptions -- there is
+no --tsserver-path option.  TypeScript 7 ships no tsserver.js and speaks
+LSP itself."
+  (let* ((pkg (my/typescript--package-dir))
+         (tsserver (and pkg (expand-file-name "lib/tsserver.js" pkg))))
+    (cond
+     ((and tsserver (file-exists-p tsserver))
+      (list "typescript-language-server" "--stdio"
+            :initializationOptions `(:tsserver (:path ,tsserver))))
+     ((my/typescript--native-lsp-exe)
+      (list (my/typescript--native-lsp-exe) "--lsp" "-stdio"))
+     (t '("typescript-language-server" "--stdio")))))
 
 (with-eval-after-load 'eglot
   (setf (alist-get '(typescript-ts-mode tsx-ts-mode) eglot-server-programs nil nil #'equal)
