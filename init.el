@@ -216,9 +216,13 @@
 (add-hook 'typescript-ts-mode-hook #'eglot-ensure)
 (add-hook 'tsx-ts-mode-hook #'eglot-ensure)
 
-;; 定義ジャンプ: M-. に加えて Cmd+クリックでも飛べるようにする (IntelliJ と同じ操作)。
-;; mac-command-modifier が super なので Cmd は s- になる。
+;; 定義ジャンプ: M-. に加えてクリックでも飛べるようにする (IntelliJ と同じ操作)。
+;; mac-command-modifier が super なので Cmd は s-、Option は meta なので M- になる。
+;; M-mouse-1 は本来 secondary selection 用だが、ほぼ使わないので譲る。押下側の
+;; mouse-drag-secondary を止めておかないとドラッグが先に走ってクリックが届かない。
 (global-set-key (kbd "s-<mouse-1>") #'xref-find-definitions-at-mouse)
+(global-set-key (kbd "M-<down-mouse-1>") #'ignore)
+(global-set-key (kbd "M-<mouse-1>") #'xref-find-definitions-at-mouse)
 
 ;; Flymake にはデフォルトのキー割り当てが無いので、エラー間を移動できるようにする
 (with-eval-after-load 'flymake

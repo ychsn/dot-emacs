@@ -7,6 +7,9 @@ auto-save-list/
 history
 projects
 
+# treemacs のワークスペース状態
+.cache/
+
 # Generated parser binaries
 tree-sitter/
 
