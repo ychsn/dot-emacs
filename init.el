@@ -10,7 +10,7 @@
 ;; 必要パッケージ一覧
 (setq package-selected-packages
       '(use-package vertico orderless consult marginalia magit markdown-mode
-                    undo-tree exec-path-from-shell dirvish))
+                    undo-tree exec-path-from-shell dirvish nerd-icons))
 
 ;; GUI の Emacs.app は launchd から起動するのでログインシェルの PATH を継承せず、
 ;; asdf の node や pnpm 配下の typescript-language-server が見つからない。
@@ -185,9 +185,22 @@
 ;; Cmd+1 は IntelliJ のプロジェクトビューと同じキー。dirvish-side は autoload
 ;; されているので、押すまで dirvish は読み込まれない。
 (global-set-key (kbd "s-1") #'dirvish-side)
+
+(with-eval-after-load 'nerd-icons
+  ;; nerd-icons 既定の Symbols Nerd Font Mono は未導入。導入済みの
+  ;; JetBrainsMono Nerd Font Mono に同じグリフが入っているのでそれを使う。
+  (setq nerd-icons-font-family "JetBrainsMono Nerd Font Mono"))
+
 (with-eval-after-load 'dirvish-side
   ;; パネルの内容を現在のファイルとプロジェクトに追従させる
-  (dirvish-side-follow-mode 1))
+  (dirvish-side-follow-mode 1)
+  ;; アイコンと ▸/▾ の展開マーカーを出し、平坦な dired 表示ではなく木にする
+  (setq dirvish-side-attributes '(nerd-icons subtree-state file-size)))
+
+(with-eval-after-load 'dirvish
+  ;; TAB はどちらのキーマップでも未使用なので、その場での入れ子展開に充てる
+  (require 'dirvish-subtree nil t)
+  (define-key dirvish-mode-map (kbd "TAB") #'dirvish-subtree-toggle))
 
 ;; Go: gopls(eglot) と consult-xref で定義ジャンプ/候補表示を使う
 (with-eval-after-load 'eglot
