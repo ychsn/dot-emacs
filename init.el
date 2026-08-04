@@ -208,6 +208,8 @@
   (setq nerd-icons-font-family "JetBrainsMono Nerd Font Mono"))
 
 (with-eval-after-load 'treemacs
+  ;; 既定の 35 桁だと少し狭い (パネル内の > を3回押した分)
+  (setq treemacs-width 38)
   ;; 表示中のプロジェクトを project.el の現在地に追従させる
   (treemacs-project-follow-mode 1)
   ;; 開いているファイルをツリー上で選択状態にする
