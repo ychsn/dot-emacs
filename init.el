@@ -192,6 +192,113 @@
 (add-hook 'typescript-ts-mode-hook #'eglot-ensure)
 (add-hook 'tsx-ts-mode-hook #'eglot-ensure)
 
+;; 定義ジャンプ: M-. に加えて Cmd+クリックでも飛べるようにする (IntelliJ と同じ操作)。
+;; mac-command-modifier が super なので Cmd は s- になる。
+(global-set-key (kbd "s-<mouse-1>") #'xref-find-definitions-at-mouse)
+
+;; Flymake にはデフォルトのキー割り当てが無いので、エラー間を移動できるようにする
+(with-eval-after-load 'flymake
+  (define-key flymake-mode-map (kbd "C-c ! n") #'flymake-goto-next-error)
+  (define-key flymake-mode-map (kbd "C-c ! p") #'flymake-goto-prev-error)
+  (define-key flymake-mode-map (kbd "C-c ! l") #'flymake-show-buffer-diagnostics))
+
+;; Biome を flymake のバックエンドにする。typescript-language-server が返すのは
+;; 型エラーだけで Biome のルールは見ないため、別立てで動かす必要がある。flymake は
+;; バックエンドを複数同時に扱えるので、eglot の診断と同じ波線・同じキーで並ぶ。
+;; --stdin-file-path は JSON レポーターが効かないので保存済みファイルを対象にする。
+(defvar-local my/flymake-biome--proc nil)
+
+(defun my/biome-program ()
+  "Return this project's biome executable, or nil when there is none."
+  (when-let* ((file buffer-file-name)
+              (dir (locate-dominating-file file "node_modules/.bin/biome"))
+              (bin (expand-file-name "node_modules/.bin/biome" dir)))
+    (and (file-executable-p bin) bin)))
+
+(defun my/biome--position (buffer line column)
+  "Convert Biome's 1-based LINE and COLUMN into a position in BUFFER."
+  (with-current-buffer buffer
+    (save-excursion
+      (save-restriction
+        (widen)
+        (goto-char (point-min))
+        (forward-line (1- (or line 1)))
+        (forward-char (min (1- (or column 1))
+                           (- (line-end-position) (point))))
+        (point)))))
+
+(defun my/biome--diagnostic (entry buffer)
+  "Build a Flymake diagnostic from Biome's ENTRY, or nil if it is elsewhere."
+  (let-alist entry
+    ;; Biome also reports problems in biome.json itself; keep only this file's.
+    (when (and .location.start
+               .location.path
+               (string= (file-truename .location.path)
+                        (file-truename (buffer-file-name buffer))))
+      (let* ((beg (my/biome--position buffer .location.start.line
+                                      .location.start.column))
+             ;; Biome's end column is exclusive; never produce an empty region.
+             (end (max (my/biome--position buffer .location.end.line
+                                           .location.end.column)
+                       (1+ beg))))
+        (flymake-make-diagnostic
+         buffer beg end
+         (cond ((equal .severity "error") :error)
+               ((equal .severity "warning") :warning)
+               (t :note))
+         (if .category (format "%s [%s]" .message .category) .message))))))
+
+;; This file is evaluated with dynamic binding, so the sentinel cannot close
+;; over the buffer and callback; hand them over as process properties instead.
+(defun my/flymake-biome--sentinel (proc _event)
+  (unless (process-live-p proc)
+    (let ((source (process-get proc 'biome-source))
+          (report-fn (process-get proc 'biome-report)))
+      (unwind-protect
+          ;; Ignore a run that a newer one has already superseded.
+          (when (and (buffer-live-p source)
+                     (eq proc (buffer-local-value 'my/flymake-biome--proc source)))
+            (funcall report-fn (my/flymake-biome--parse proc source)))
+        (kill-buffer (process-buffer proc))))))
+
+(defun my/flymake-biome (report-fn &rest _args)
+  "A Flymake backend reporting Biome lint diagnostics via REPORT-FN."
+  (let ((program (my/biome-program))
+        (file buffer-file-name))
+    (if (not (and program file))
+        (funcall report-fn nil)
+      (when (process-live-p my/flymake-biome--proc)
+        (kill-process my/flymake-biome--proc))
+      (let ((proc (make-process
+                   :name "flymake-biome" :noquery t :connection-type 'pipe
+                   :buffer (generate-new-buffer " *flymake-biome*")
+                   :command (list program "lint" "--reporter=json" file))))
+        (process-put proc 'biome-source (current-buffer))
+        (process-put proc 'biome-report report-fn)
+        (setq my/flymake-biome--proc proc)
+        (set-process-sentinel proc #'my/flymake-biome--sentinel)))))
+
+(defun my/flymake-biome--parse (proc buffer)
+  "Read Biome's JSON from PROC and return diagnostics for BUFFER."
+  (with-current-buffer (process-buffer proc)
+    (goto-char (point-min))
+    ;; Biome prints an "unstable option" notice before the JSON payload.
+    (when (re-search-forward "^{" nil t)
+      (goto-char (match-beginning 0))
+      (when-let* ((json (ignore-errors (json-parse-buffer :object-type 'alist)))
+                  (entries (alist-get 'diagnostics json)))
+        (delq nil (mapcar (lambda (e) (my/biome--diagnostic e buffer))
+                          (append entries nil)))))))
+
+(defun my/enable-biome-flymake ()
+  "Add the Biome backend to Flymake when this project uses Biome."
+  (when (my/biome-program)
+    (add-hook 'flymake-diagnostic-functions #'my/flymake-biome nil t)
+    (flymake-mode 1)))
+
+(add-hook 'typescript-ts-mode-hook #'my/enable-biome-flymake)
+(add-hook 'tsx-ts-mode-hook #'my/enable-biome-flymake)
+
 ;; TypeScript/TSX: 外部パッケージなしで ElDoc を point 近くに出す
 (defun my/eldoc-hide-child-frame ()
   "Hide the child frame used for ElDoc, if any."
