@@ -64,8 +64,14 @@
 ;; 行数表示
 (global-display-line-numbers-mode 1)
 
-;; フォント
-(set-frame-font "DejaVu Sans Mono-12")
+;; フォント。存在しないフォントを set-frame-font に渡すとエラーで init が止まる
+;; ため、使える最初のものを選ぶ。第3引数 t で以後のフレームにも適用する。
+(let ((font (seq-find (lambda (f) (member f (font-family-list)))
+                      '("JetBrainsMono Nerd Font Mono"
+                        "JetBrains Mono"
+                        "DejaVu Sans Mono"))))
+  (when font
+    (set-frame-font (format "%s-12" font) nil t)))
 
 ;; macOS (Mac Port) 固有設定
 (when (eq system-type 'darwin)
