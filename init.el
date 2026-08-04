@@ -1,12 +1,16 @@
 (require 'package)
 (add-to-list 'package-archives
              '("melpa-stable" . "https://stable.melpa.org/packages/") t)
+;; 多くの作者が stable タグを打たないため、melpa-stable だけでは入らない
+;; パッケージがある (dirvish など)。
+(add-to-list 'package-archives
+             '("melpa" . "https://melpa.org/packages/") t)
 (package-initialize)
 
 ;; 必要パッケージ一覧
 (setq package-selected-packages
       '(use-package vertico orderless consult marginalia magit markdown-mode
-                    undo-tree exec-path-from-shell))
+                    undo-tree exec-path-from-shell dirvish))
 
 ;; GUI の Emacs.app は launchd から起動するのでログインシェルの PATH を継承せず、
 ;; asdf の node や pnpm 配下の typescript-language-server が見つからない。
@@ -176,6 +180,14 @@
 
 ;; C-x C-o で project-find-file
 (global-set-key (kbd "C-x C-o") #'project-find-file)
+
+;; dirvish のサイドパネル。中身は dired なので RET / R / D / m はこれまで通り効く。
+;; Cmd+1 は IntelliJ のプロジェクトビューと同じキー。dirvish-side は autoload
+;; されているので、押すまで dirvish は読み込まれない。
+(global-set-key (kbd "s-1") #'dirvish-side)
+(with-eval-after-load 'dirvish-side
+  ;; パネルの内容を現在のファイルとプロジェクトに追従させる
+  (dirvish-side-follow-mode 1))
 
 ;; Go: gopls(eglot) と consult-xref で定義ジャンプ/候補表示を使う
 (with-eval-after-load 'eglot
