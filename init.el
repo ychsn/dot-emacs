@@ -10,7 +10,8 @@
 ;; 必要パッケージ一覧
 (setq package-selected-packages
       '(use-package vertico orderless consult marginalia magit markdown-mode
-                    undo-tree exec-path-from-shell dirvish nerd-icons))
+                    undo-tree exec-path-from-shell
+                    treemacs treemacs-nerd-icons nerd-icons))
 
 ;; GUI の Emacs.app は launchd から起動するのでログインシェルの PATH を継承せず、
 ;; asdf の node や pnpm 配下の typescript-language-server が見つからない。
@@ -181,26 +182,24 @@
 ;; C-x C-o で project-find-file
 (global-set-key (kbd "C-x C-o") #'project-find-file)
 
-;; dirvish のサイドパネル。中身は dired なので RET / R / D / m はこれまで通り効く。
-;; Cmd+1 は IntelliJ のプロジェクトビューと同じキー。dirvish-side は autoload
-;; されているので、押すまで dirvish は読み込まれない。
-(global-set-key (kbd "s-1") #'dirvish-side)
+;; treemacs のサイドパネル。dirvish-side は dired の平坦な一覧が土台なので、
+;; アイコン付きの入れ子ツリーにするには詰める設定が多かった。treemacs は
+;; 最初からその表示のためのものなので素直に済む。
+;; Cmd+1 は IntelliJ のプロジェクトビューと同じキー。
+(global-set-key (kbd "s-1") #'treemacs)
 
 (with-eval-after-load 'nerd-icons
   ;; nerd-icons 既定の Symbols Nerd Font Mono は未導入。導入済みの
   ;; JetBrainsMono Nerd Font Mono に同じグリフが入っているのでそれを使う。
   (setq nerd-icons-font-family "JetBrainsMono Nerd Font Mono"))
 
-(with-eval-after-load 'dirvish-side
-  ;; パネルの内容を現在のファイルとプロジェクトに追従させる
-  (dirvish-side-follow-mode 1)
-  ;; アイコンと ▸/▾ の展開マーカーを出し、平坦な dired 表示ではなく木にする
-  (setq dirvish-side-attributes '(nerd-icons subtree-state file-size)))
-
-(with-eval-after-load 'dirvish
-  ;; TAB はどちらのキーマップでも未使用なので、その場での入れ子展開に充てる
-  (require 'dirvish-subtree nil t)
-  (define-key dirvish-mode-map (kbd "TAB") #'dirvish-subtree-toggle))
+(with-eval-after-load 'treemacs
+  ;; 表示中のプロジェクトを project.el の現在地に追従させる
+  (treemacs-project-follow-mode 1)
+  ;; 開いているファイルをツリー上で選択状態にする
+  (treemacs-follow-mode 1)
+  (when (require 'treemacs-nerd-icons nil t)
+    (treemacs-load-theme "nerd-icons")))
 
 ;; Go: gopls(eglot) と consult-xref で定義ジャンプ/候補表示を使う
 (with-eval-after-load 'eglot
