@@ -293,6 +293,10 @@ LSP itself."
 (global-set-key (kbd "M-<down-mouse-1>") #'ignore)
 (global-set-key (kbd "M-<mouse-1>") #'xref-find-definitions-at-mouse)
 
+;; 行き来は IntelliJ と同じ Cmd+[ / Cmd+] でも。M-, / C-M-, も従来通り使える。
+(global-set-key (kbd "s-[") #'xref-go-back)
+(global-set-key (kbd "s-]") #'xref-go-forward)
+
 ;; Flymake にはデフォルトのキー割り当てが無いので、エラー間を移動できるようにする
 (with-eval-after-load 'flymake
   (define-key flymake-mode-map (kbd "C-c ! n") #'flymake-goto-next-error)
