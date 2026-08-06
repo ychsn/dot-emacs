@@ -479,13 +479,14 @@ Fall back to the echo area when child frames are unavailable."
                (buffer-live-p eldoc--doc-buffer))
       (eldoc-doc-buffer t))))
 
-;; 修飾キーの単独押しは Emacs ではイベントにならないので、IntelliJ の Quick
-;; Documentation と同じ Cmd+J に割り当てる。TypeScript バッファでは
-;; eldoc-display-functions が下の子フレーム表示になっているため point の脇に出る。
-(global-set-key (kbd "s-j") #'eldoc)
+;; 修飾キーの単独押しは Emacs ではイベントにならないので、キーを割り当てる。
+;; IntelliJ の Quick Documentation は Cmd+J だが他アプリが取っているため Cmd+I。
+;; TypeScript バッファでは eldoc-display-functions が下の子フレーム表示に
+;; なっているため、エコー領域ではなく point の脇に出る。
+(global-set-key (kbd "s-i") #'eldoc)
 
-;; 待たずに出したいとき用のキーとは別に、放っておいても出る側も速く・厚くする。
-(setq eldoc-idle-delay 0.2
+;; カーソルを止めたまま2秒経ったら自動で出す。短くすると移動のたびにちらつく。
+(setq eldoc-idle-delay 2.0
       ;; default は最初の情報源だけを出すので、シグネチャだけで定義元の
       ;; ドキュメントコメントが出ない。compose にして両方並べる。
       eldoc-documentation-strategy #'eldoc-documentation-compose)
