@@ -479,8 +479,12 @@ Fall back to the echo area when child frames are unavailable."
                (buffer-live-p eldoc--doc-buffer))
       (eldoc-doc-buffer t))))
 
-;; Command 単独押しでのポップアップは Emacs では作れない (修飾キーだけでは
-;; キーイベントが発生しない)。代わりに point 上の表示を速く・厚くして近づける。
+;; 修飾キーの単独押しは Emacs ではイベントにならないので、IntelliJ の Quick
+;; Documentation と同じ Cmd+J に割り当てる。TypeScript バッファでは
+;; eldoc-display-functions が下の子フレーム表示になっているため point の脇に出る。
+(global-set-key (kbd "s-j") #'eldoc)
+
+;; 待たずに出したいとき用のキーとは別に、放っておいても出る側も速く・厚くする。
 (setq eldoc-idle-delay 0.2
       ;; default は最初の情報源だけを出すので、シグネチャだけで定義元の
       ;; ドキュメントコメントが出ない。compose にして両方並べる。
