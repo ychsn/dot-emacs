@@ -113,6 +113,14 @@
 (auto-save-visited-mode 1)
 (setq auto-save-visited-interval 2)
 
+;; 上の自動保存と対にする。書き込みだけ自動で読み込みが手動だと、外部ツールが
+;; ファイルを変えたとき 2 秒ごとの自動保存が "changed since visited or saved" を
+;; 聞きに来る。no と答えても basic-save-buffer が Save not confirmed を投げるので
+;; エラーが出続ける。外部の変更を取り込んでおけばそもそも食い違わない。
+;; 未保存の変更があるバッファは auto-revert が触らないので編集は消えない。
+(setq auto-revert-avoid-polling t)
+(global-auto-revert-mode 1)
+
 (setq whitespace-style '(face              ; faceを使って視覚化する。
                          trailing          ; 行末の空白を対象とする。
                          ;lines-tail        ; 長すぎる行のうち
