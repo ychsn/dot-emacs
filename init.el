@@ -37,6 +37,31 @@
     (unless (package-installed-p pkg)
       (package-install pkg))))
 
+;; 新しい端末では elpa/ が空になる。以降の設定はほぼ (require 'X nil t) で
+;; 括ってあるため、放置すると軒並み静かに空振りし「init は読めているのに何も
+;; 効いていない」状態になる。不足しているときだけ入れる。
+(when (seq-some (lambda (pkg) (not (package-installed-p pkg)))
+                package-selected-packages)
+  (condition-case err
+      (progn (package-refresh-contents)
+             (package-install-selected-packages t))
+    (error (message "パッケージの自動インストールに失敗: %s"
+                    (error-message-string err)))))
+
+;; tree-sitter の文法はリポジトリに含めない (プラットフォーム依存のバイナリ)。
+;; 新しい端末では明示的に入れる必要がある。コンパイルが走るので起動時ではなく
+;; 手動またはセットアップスクリプトから呼ぶ。
+(defun my/install-treesit-grammars ()
+  "Build any tree-sitter grammar named in `treesit-language-source-alist'."
+  (interactive)
+  (require 'treesit)
+  (dolist (entry treesit-language-source-alist)
+    (let ((lang (car entry)))
+      (if (treesit-ready-p lang t)
+          (message "grammar %s: 導入済み" lang)
+        (message "grammar %s: 取得中..." lang)
+        (treesit-install-language-grammar lang)))))
+
 ;; 使用テーマ。load-theme の第2引数 t で安全性の確認を省く。
 (when (require 'doom-themes nil t)
   (load-theme 'doom-nord-light t))
