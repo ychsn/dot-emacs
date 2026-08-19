@@ -480,9 +480,12 @@ LSP itself."
 (defun my/eldoc-display-in-child-frame (docs interactive)
   "Display DOCS in a child frame near point for TypeScript buffers.
 Fall back to the echo area when child frames are unavailable."
+  ;; eglot が buffer を管理しているかは eglot--managed-mode で見る。ハイフン1つの
+  ;; eglot-managed-mode は存在せず、bound-and-true-p が黙って nil を返すため、
+  ;; 常にエコー領域へ落ちていた。
   (if (not (and docs
                 (display-graphic-p)
-                (bound-and-true-p eglot-managed-mode)
+                (bound-and-true-p eglot--managed-mode)
                 (derived-mode-p 'typescript-ts-mode 'tsx-ts-mode)))
       (progn
         (my/eldoc-hide-child-frame)
