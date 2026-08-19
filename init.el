@@ -114,6 +114,30 @@
   (when (fboundp 'mac-auto-operator-composition-mode)
     (mac-auto-operator-composition-mode 1)))
 
+;; Emacs にフォーカスが移ったら半角英数に戻す。日本語入力のまま切り替えると
+;; C-x などが IME に食われて操作できなくなるため。
+;; 有効な入力ソースは ABC と Google 日本語入力。
+(defvar my/mac-ascii-input-source "com.apple.keylayout.ABC"
+  "Input source to fall back to when Emacs takes focus.")
+
+(defun my/mac-select-ascii-input-source ()
+  "Switch macOS to `my/mac-ascii-input-source' when Emacs gains focus.
+`after-focus-change-function' fires for losing focus too, so check the
+state rather than switching on every call -- otherwise leaving Emacs
+would yank the input source out from under the other application."
+  (when (and (display-graphic-p)
+             (fboundp 'mac-select-input-source)
+             (frame-focus-state))
+    (ignore-errors (mac-select-input-source my/mac-ascii-input-source))))
+
+(when (and (eq system-type 'darwin) (fboundp 'mac-select-input-source))
+  (add-function :after after-focus-change-function
+                #'my/mac-select-ascii-input-source)
+  ;; prefix キーやミニバッファでも ASCII に落とす (Mac Port 内蔵)。
+  ;; フォーカス移動を伴わない場面を補う。
+  (when (fboundp 'mac-auto-ascii-mode)
+    (mac-auto-ascii-mode 1)))
+
 ;; マウス起点のコマンドが入力を求めるとき、macOS のネイティブダイアログではなく
 ;; ミニバッファを使う。eglot が繋がっていないバッファで Cmd+クリックすると xref が
 ;; etags にフォールバックし、TAGS ファイルを尋ねる Finder のパネルが開いてしまう。
