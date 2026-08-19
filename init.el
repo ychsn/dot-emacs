@@ -19,7 +19,7 @@
       '(use-package vertico orderless consult marginalia magit markdown-mode
                     undo-tree exec-path-from-shell
                     treemacs treemacs-nerd-icons nerd-icons doom-themes
-                    go-mode terraform-mode))
+                    go-mode terraform-mode blamer))
 
 ;; GUI の Emacs.app は launchd から起動するのでログインシェルの PATH を継承せず、
 ;; asdf の node や pnpm 配下の typescript-language-server が見つからない。
@@ -566,4 +566,24 @@ Fall back to the echo area when child frames are unavailable."
 (global-set-key (kbd "C-x g") #'magit-status)
 ;; 変更行の中で実際に変わった箇所だけを全ハンクで強調 (delta の emph 相当)
 (setq magit-diff-refine-hunk 'all)
+
+;; カーソル行の右端に git blame を出す。magit 組み込みの blame は headings /
+;; highlight / lines しか無く、行末インライン表示はできない。
+(with-eval-after-load 'blamer
+  ;; visual はカーソル行だけを対象にする。既定の both は選択範囲にも出す。
+  (setq blamer-type 'visual
+        blamer-idle-time 1.0
+        blamer-max-commit-message-length 50))
+
+(defun my/enable-blamer-if-local ()
+  "Turn blamer on, but only for files on this machine.
+It shells out through `async-start', which starts another Emacs; over a
+TRAMP path that process would have to open its own connection, which is
+not worth paying for while reading remote code."
+  (when (and buffer-file-name
+             (not (file-remote-p buffer-file-name))
+             (require 'blamer nil t))
+    (blamer-mode 1)))
+
+(add-hook 'find-file-hook #'my/enable-blamer-if-local)
 
