@@ -477,6 +477,24 @@ LSP itself."
     (cons (+ (nth 0 edges) (car xy))
           (+ (nth 1 edges) (cdr xy) line-height 8))))
 
+(defun my/face-color-or (face attribute fallback)
+  "Return FACE's ATTRIBUTE when it names a usable color, else FALLBACK."
+  (let ((color (face-attribute face attribute nil t)))
+    (if (and (stringp color) (color-defined-p color)) color fallback)))
+
+(defun my/eldoc-child-frame-style ()
+  "Give the doc frame a surface of its own and return its background.
+Themes already style `tooltip' as a popup distinct from the buffer and
+`shadow' as a muted rule, so borrowing those keeps the frame legible
+after a theme change instead of pinning it to one palette.  The border
+is a face rather than a frame parameter, so this necessarily applies to
+every child frame -- there are no others here."
+  (let ((background (my/face-color-or 'tooltip :background
+                                      (face-attribute 'default :background nil t))))
+    (set-face-background 'child-frame-border
+                         (my/face-color-or 'shadow :foreground background))
+    background))
+
 (defun my/eldoc-display-in-child-frame (docs interactive)
   "Display DOCS in a child frame near point for TypeScript buffers.
 Fall back to the echo area when child frames are unavailable."
@@ -493,6 +511,7 @@ Fall back to the echo area when child frames are unavailable."
     (eldoc-display-in-buffer docs nil)
     (let* ((buffer (eldoc-doc-buffer))
            (position (my/eldoc-child-frame-position))
+           (background (my/eldoc-child-frame-style))
            (window
             (display-buffer
              buffer
@@ -507,8 +526,9 @@ Fall back to the echo area when child frames are unavailable."
                    (no-accept-focus . t)
                    (no-focus-on-map . t)
                    (skip-taskbar . t)
+                   (background-color . ,background)
                    (border-width . 0)
-                   (child-frame-border-width . 1)
+                   (child-frame-border-width . 2)
                    (internal-border-width . 8)
                    (left . ,(car position))
                    (top . ,(cdr position))
