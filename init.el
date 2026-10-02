@@ -19,7 +19,7 @@
       '(use-package vertico orderless consult marginalia magit markdown-mode
                     undo-tree exec-path-from-shell
                     treemacs treemacs-nerd-icons nerd-icons doom-themes
-                    go-mode terraform-mode blamer))
+                    go-mode terraform-mode blamer git-link))
 
 ;; GUI の Emacs.app は launchd から起動するのでログインシェルの PATH を継承せず、
 ;; asdf の node や pnpm 配下の typescript-language-server が見つからない。
@@ -69,7 +69,8 @@
 ;; Tree-sitter の文法定義リスト
 (setq treesit-language-source-alist
       '((typescript "https://github.com/tree-sitter/tree-sitter-typescript" "master" "typescript/src")
-        (tsx "https://github.com/tree-sitter/tree-sitter-typescript" "master" "tsx/src")))
+        (tsx "https://github.com/tree-sitter/tree-sitter-typescript" "master" "tsx/src")
+        (prisma "https://github.com/victorhqc/tree-sitter-prisma")))
 
 ;; typescript-ts-mode は自身を auto-mode-alist に登録するが、それはライブラリが
 ;; 読み込まれた後の話で、読み込む契機が無いので .ts が fundamental-mode になる。
@@ -84,6 +85,11 @@
 ;; .jsonc はどのモードにも紐づいておらず fundamental-mode になる。js-json-mode は
 ;; js-mode 派生なので、JSON にとっては構文外の // と /* */ もコメントとして扱える。
 (add-to-list 'auto-mode-alist '("\\.jsonc\\'" . js-json-mode))
+
+;; markdown-mode のプレビューを GitHub Flavored Markdown で変換する。
+(with-eval-after-load 'markdown-mode
+  (setq markdown-command "/opt/homebrew/bin/cmark-gfm")
+  (define-key markdown-mode-map (kbd "C-c p") #'markdown-live-preview-mode))
 
 ; Ctrl-hはBackspace扱い
 (keyboard-translate ?\C-h ?\C-?)
@@ -609,6 +615,12 @@ Fall back to the echo area when child frames are unavailable."
 (global-set-key (kbd "C-c g d") #'my/ghq-dired)
 (global-set-key (kbd "C-c g s") #'my/ghq-magit-status)
 
+;; 選択範囲 (なければ現在行) の GitHub URL を kill-ring にコピー
+(with-eval-after-load 'git-link
+  ;; ブランチ名ではなくコミットハッシュで固定リンクにする
+  (setq git-link-use-commit t))
+(global-set-key (kbd "C-c g l") #'git-link)
+
 ;; C-x g で今いるリポジトリの magit-status
 (global-set-key (kbd "C-x g") #'magit-status)
 ;; 変更行の中で実際に変わった箇所だけを全ハンクで強調 (delta の emph 相当)
@@ -633,4 +645,3 @@ not worth paying for while reading remote code."
     (blamer-mode 1)))
 
 (add-hook 'find-file-hook #'my/enable-blamer-if-local)
-
