@@ -99,6 +99,10 @@
 ;; 行数表示
 (global-display-line-numbers-mode 1)
 
+;; スクロールしてもカーソルの画面上の位置を保つ。Emacs はカーソルを画面外に
+;; 置けないので、こうしておくと逆方向にスクロールすれば元の位置に戻れる。
+(setq scroll-preserve-screen-position t)
+
 ;; フォント。存在しないフォントを set-frame-font に渡すとエラーで init が止まる
 ;; ため、使える最初のものを選ぶ。第3引数 t で以後のフレームにも適用する。
 (let ((font (seq-find (lambda (f) (member f (font-family-list)))
