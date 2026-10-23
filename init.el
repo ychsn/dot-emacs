@@ -267,6 +267,21 @@ would yank the input source out from under the other application."
 (when (locate-library "consult")
   (global-set-key (kbd "C-c s") #'consult-line))
 
+(defun my/search-forward-dwim ()
+  "Search the buffer, starting from the selected text when there is one.
+With a selection, narrow `consult-line' candidates to lines containing it;
+otherwise behave as plain `isearch-forward'."
+  (interactive)
+  (if (and (use-region-p) (fboundp 'consult-line))
+      (let ((text (buffer-substring-no-properties (region-beginning) (region-end))))
+        (deactivate-mark)
+        ;; ( や . を正規表現ではなく文字どおりに探す
+        (consult-line (regexp-quote text)))
+    (call-interactively #'isearch-forward)))
+
+;; C-s は選択中なら選択文字列で consult-line、そうでなければ通常の isearch
+(global-set-key (kbd "C-s") #'my/search-forward-dwim)
+
 ;; C-x C-f は常に find-file にする
 (global-set-key (kbd "C-x C-f") #'find-file)
 
@@ -649,31 +664,3 @@ not worth paying for while reading remote code."
     (blamer-mode 1)))
 
 (add-hook 'find-file-hook #'my/enable-blamer-if-local)
-
-;; 選択中の文字列と同じ箇所をファイル全体でハイライトする
-(defvar-local my/region-match-overlays nil)
-
-(defun my/region-match-clear ()
-  (mapc #'delete-overlay my/region-match-overlays)
-  (setq my/region-match-overlays nil))
-
-(defun my/region-match-update ()
-  "Highlight other visible occurrences of the selected text."
-  (my/region-match-clear)
-  (when (and (use-region-p) (not (minibufferp)))
-    (let ((beg (region-beginning)) (end (region-end)))
-      ;; 1 文字や複数行は対象外。空白だけの選択も光らせない。
-      (when (and (> (- end beg) 1)
-                 (= (line-number-at-pos beg) (line-number-at-pos end)))
-        (let ((text (buffer-substring-no-properties beg end))
-              (case-fold-search nil))
-          (unless (string-blank-p text)
-            (save-excursion
-              (goto-char (point-min))
-              (while (search-forward text nil t)
-                (unless (= (match-beginning 0) beg)
-                  (let ((ov (make-overlay (match-beginning 0) (match-end 0))))
-                    (overlay-put ov 'face 'lazy-highlight)
-                    (push ov my/region-match-overlays)))))))))))
-
-(add-hook 'post-command-hook #'my/region-match-update)
