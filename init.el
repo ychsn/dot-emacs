@@ -180,6 +180,12 @@ would yank the input source out from under the other application."
 (setq auto-revert-avoid-polling t)
 (global-auto-revert-mode 1)
 
+;; ただし未保存の変更があるバッファを外部ツールが書き換えると、auto-revert は
+;; 触らず自動保存だけが 2 秒ごとに上書き確認を出し続ける。ディスク側が変わって
+;; いるバッファは自動保存せず、どちらを残すかは手動の保存か revert-buffer で決める。
+(setq auto-save-visited-predicate
+      (lambda () (verify-visited-file-modtime (current-buffer))))
+
 (setq whitespace-style '(face              ; faceを使って視覚化する。
                          trailing          ; 行末の空白を対象とする。
                          ;lines-tail        ; 長すぎる行のうち
